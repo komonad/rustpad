@@ -1,14 +1,12 @@
 use crate::client::Callback;
 use std::borrow::Cow;
-use std::ops::{Range, Deref};
-use druid::piet::{PietTextLayoutBuilder, TextStorage as PietTextStorage};
+use std::ops::Range;
+use druid::piet::TextStorage as PietTextStorage;
 use druid::Data;
 use std::sync::Arc;
 use parking_lot::RwLock;
 use crate::code_editor::text::{TextStorage, StringCursor};
 use crate::code_editor::text::editable_text::EditableText;
-use futures_channel::mpsc::UnboundedReceiver;
-use tokio::sync::mpsc::UnboundedSender;
 // use druid::text::{EditableText, TextStorage, StringCursor};
 
 

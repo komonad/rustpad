@@ -20,8 +20,6 @@
 use std::time::Duration;
 use tracing::{instrument, trace};
 
-use serde_json::Value;
-
 use crate::code_editor::text::{EditableText, ImeInvalidation, Selection, TextComponent, TextLayout, TextStorage};
 
 use druid::kurbo::Insets;
@@ -30,7 +28,7 @@ use druid::widget::prelude::*;
 use druid::widget::{Padding, Scroll, WidgetWrapper};
 use druid::{
     theme, Color, Command, FontDescriptor, HotKey, KeyEvent, KeyOrValue, Point, Rect, SysMods,
-    TextAlignment, TimerToken, Vec2, Selector, ExtEventSink, Target
+    TextAlignment, TimerToken, Vec2, Selector, ExtEventSink
 };
 
 

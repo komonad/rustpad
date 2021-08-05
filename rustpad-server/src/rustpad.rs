@@ -37,26 +37,26 @@ struct State {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct UserOperation {
-    id: u64,
-    operation: OperationSeq,
+pub struct UserOperation {
+    pub id: u64,
+    pub operation: OperationSeq,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-struct UserInfo {
-    name: String,
-    hue: u32,
+pub struct UserInfo {
+    pub name: String,
+    pub hue: u32,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-struct CursorData {
-    cursors: Vec<u32>,
-    selections: Vec<(u32, u32)>,
+#[derive(Clone, Debug, Serialize, Deserialize, Default)]
+pub struct CursorData {
+    pub cursors: Vec<u32>,
+    pub selections: Vec<(u32, u32)>,
 }
 
 /// A message received from the client over WebSocket.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-enum ClientMsg {
+pub enum ClientMsg {
     /// Represents a sequence of local edits from the user.
     Edit {
         revision: usize,
@@ -72,7 +72,7 @@ enum ClientMsg {
 
 /// A message sent to the client over WebSocket.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-enum ServerMsg {
+pub enum ServerMsg {
     /// Informs the client of their unique socket ID.
     Identity(u64),
     /// Broadcasts text operations to all clients.

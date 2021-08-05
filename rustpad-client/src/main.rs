@@ -1,18 +1,15 @@
 #![feature(fn_traits)]
 
-use futures_util::{future, pin_mut, StreamExt};
+use futures_util::StreamExt;
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt};
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
-use operational_transform::{OperationSeq, Operation};
-use std::collections::HashMap;
+
 use std::sync::Arc;
 use parking_lot::RwLock;
 use futures_channel::mpsc::UnboundedSender;
 
-use rustpad_server::rustpad::{UserInfo, ClientMsg, ServerMsg, CursorData, UserOperation};
 use std::time::Duration;
 use tokio::io::BufReader;
-use std::mem::{swap, take};
 
 pub mod client;
 pub mod code_editor;
@@ -21,25 +18,13 @@ pub mod transformer;
 
 use client::RustpadClient;
 use crate::editor::{Edit, EditorProxy, EditorBinding};
-use tokio::sync::Notify;
-use druid::widget::{TextBox, Controller, WidgetWrapper};
+use druid::widget::Controller;
 use druid::{Target, WidgetId, Widget};
 
-use log::{info, error, warn};
-use druid::{WidgetExt, EventCtx, Event, Env, LifeCycleCtx, LifeCycle, UpdateCtx, AppLauncher, WindowDesc, Selector};
-use std::ops::Range;
-use std::borrow::Cow;
+use log::{info, warn};
+use druid::{WidgetExt, EventCtx, Event, Env, AppLauncher, WindowDesc, Selector};
 use crate::code_editor::code_editor::CodeEditor;
 use crate::client::Callback;
-use std::num::NonZeroU64;
-
-fn test_send<T: Send>(x: &T) {}
-
-// struct EditData {
-//     content: String,
-//     chars: Vec<char>,
-//     senders: Vec<UnboundedSender<(*const String, *const Edit)>>,
-// }
 
 const USER_EDIT_SELECTOR: Selector<Edit> = Selector::new("user-edit");
 
@@ -203,7 +188,7 @@ async fn read_stdin(client: Arc<RwLock<RustpadClient>>, notify: UnboundedSender<
         let current = x.next_line().await.unwrap().unwrap_or_default();
         tokio::io::stdout().write_all(format!("entered {}\n", current).as_bytes()).await.unwrap();
         if current == "quit" {
-            notify.unbounded_send(());
+            notify.unbounded_send(()).unwrap();
             break;
         }
         let push_back = build_edit(
@@ -212,7 +197,7 @@ async fn read_stdin(client: Arc<RwLock<RustpadClient>>, notify: UnboundedSender<
         );
         info!("edited {:?}", push_back);
         client.write().event_sink.as_ref().map(move |x| {
-            x.submit_command(USER_EDIT_SELECTOR, Box::new(push_back), Target::Auto);
+            x.submit_command(USER_EDIT_SELECTOR, Box::new(push_back), Target::Auto).unwrap();
         });
     }
 }

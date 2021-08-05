@@ -1,7 +1,6 @@
 //! Server backend for the Rustpad collaborative text editor.
 
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
 
 use std::sync::Arc;
 use std::time::{Duration, SystemTime};
@@ -15,7 +14,7 @@ use warp::{filters::BoxedFilter, ws::Ws, Filter, Reply};
 use rustpad::Rustpad;
 
 mod ot;
-mod rustpad;
+pub mod rustpad;
 
 /// An entry stored in the global server map.
 ///

@@ -7,7 +7,6 @@ use tokio_tungstenite::tungstenite::Message;
 use std::sync::Arc;
 use parking_lot::RwLock;
 
-#[macro_use]
 use log::{trace, info, error};
 
 use crate::editor::{EditorBinding, EditorProxy, Edit};
@@ -86,7 +85,7 @@ impl Default for RustpadClient {
 
 impl RustpadClient {
     pub(crate) async fn create() -> Arc<RwLock<Self>> {
-        let mut res = Arc::new(RwLock::new(RustpadClient {
+        let res = Arc::new(RwLock::new(RustpadClient {
             my_info: Some(UserInfo {
                 name: "Comonad".to_string(),
                 hue: 1231231231,
