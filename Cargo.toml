@@ -2,5 +2,6 @@
 
 members = [
     "rustpad-server",
+    "rustpad-client",
     "rustpad-wasm",
 ]

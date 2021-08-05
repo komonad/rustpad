@@ -1,0 +1,30 @@
+[package]
+name = "rustpad-client"
+version = "0.1.0"
+edition = "2018"
+
+[dependencies]
+rustpad-server = { path = "../rustpad-server" }
+tokio = { version = "1", features = ["full", "io-util"] }
+tokio-tungstenite = "0.15.0"
+futures = "0.3"
+serde_json = "*"
+serde = { version = "*", features = ["derive"] }
+env_logger = "*"
+structopt = "*"
+log = "*"
+rand = "*"
+operational-transform = "*"
+url = "2.0.0"
+futures-channel = "0.3"
+pin-utils = "0.1.0"
+futures-util = "0.3.15"
+tungstenite = "0.14.0"
+tokio-util = "*"
+bytecount = "0.6.1"
+druid = { git = "https://github.com/linebender/druid" }
+druid-shell = { git = "https://github.com/linebender/druid" }
+parking_lot = "0.11.1"
+xi-unicode = "0.3.0"
+unicode-segmentation = "1.6.0"
+tracing = { version = "0.1.22" }
