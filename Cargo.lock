@@ -1717,6 +1717,7 @@ dependencies = [
  "operational-transform",
  "parking_lot",
  "pin-utils",
+ "pretty_env_logger",
  "rand 0.8.3",
  "rustpad-server",
  "serde",

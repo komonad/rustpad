@@ -1,4 +1,4 @@
-use crate::client::Callback;
+use crate::client::{Callback, RustpadClient};
 use std::borrow::Cow;
 use std::ops::Range;
 use druid::piet::TextStorage as PietTextStorage;
@@ -58,6 +58,19 @@ impl EditorBinding {
         self.update_content_as_string();
 
         println!("current content: {}", self.content_as_string);
+    }
+
+    pub fn create_with_client(client: &Arc<RwLock<RustpadClient>>) -> Self {
+        let copy = Arc::clone(&client);
+        let mut our_document = EditorBinding::default();
+        our_document.on_edit(Callback::new(Arc::new(RwLock::new(move |b: *const Edit| unsafe {
+            // GUI edit to Rustpad Client
+            if let Some(mut handle) = copy.try_write() {
+                handle.editor_binding.edit_without_callback(&*b);
+                handle.on_change((*b).clone())
+            }
+        }))));
+        our_document
     }
 }
 

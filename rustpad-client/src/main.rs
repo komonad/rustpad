@@ -43,47 +43,25 @@ impl Controller<EditorBinding, CodeEditor<EditorBinding>> for EditorController {
 
 #[tokio::main]
 async fn main() {
-    let connect_addr = "ws://127.0.0.1:3030/api/socket/abcdef".to_string();
+    pretty_env_logger::init();
+
     let editor_widget_id: WidgetId = WidgetId::next();
 
-    let client = RustpadClient::create().await;
-
-    let client2 = Arc::clone(&client);
-
-    let editor = CodeEditor::multiline()
+    let editor =
+        CodeEditor::multiline()
         .controller(EditorController(editor_widget_id))
         .with_id(editor_widget_id);
-
-    let mut our_document = EditorBinding::default();
-
-    let client3 = Arc::clone(&client);
-    our_document.on_edit(Callback::new(Arc::new(RwLock::new(move |b: *const Edit| unsafe {
-        // GUI edit to Rustpad Client
-        if let Some(mut handle) = client3.try_write() {
-            handle.editor_binding.edit_without_callback(&*b);
-            handle.on_change((*b).clone())
-        }
-    }))));
-    // editor.text().borrow_mut().layout.set_text(our_document);
 
     let window = WindowDesc::new(editor).title("Rustpad Client");
     let launcher = AppLauncher::with_window(window);
 
-    let event_sink = launcher.get_external_handle();
-    let event_sink2 = launcher.get_external_handle();
+    let client = RustpadClient::create();
+    client.write().set_event_sink(&launcher, editor_widget_id);
 
-    client.write().editor_binding.on_edit(Callback::new(Arc::new(RwLock::new(move |b: *const Edit| unsafe {
-        // Rustpad Client edit to GUI
-        event_sink.submit_command(USER_EDIT_SELECTOR, Box::new((*b).clone()), Target::Widget(editor_widget_id)).unwrap();
-    }))));
-
-    // let document: Arc<RwLock<EditorBinding>> = Default::default();
-
-    // editor.text().borrow_mut().layout.set_text();
-
+    let client2 = Arc::clone(&client);
     let connect_loop = tokio::spawn(async move {
-        println!("connecting");
-        let conn = connect_addr;
+        info!("connecting");
+        let conn = "ws://127.0.0.1:3030/api/socket/abcdef".to_string();
         let client = client2;
         loop {
             let x = Arc::clone(&client);
@@ -97,7 +75,7 @@ async fn main() {
     });
 
     launcher
-        .launch(our_document)
+        .launch(EditorBinding::create_with_client(&client))
         .unwrap();
 
     connect_loop.abort();
@@ -196,8 +174,13 @@ async fn read_stdin(client: Arc<RwLock<RustpadClient>>, notify: UnboundedSender<
             current,
         );
         info!("edited {:?}", push_back);
+        let push_back2 = push_back.clone();
         client.write().event_sink.as_ref().map(move |x| {
             x.submit_command(USER_EDIT_SELECTOR, Box::new(push_back), Target::Auto).unwrap();
         });
+        for callback in &client.write().editor_binding.after_edits {
+            callback.invoke(&push_back2);
+        }
+        // client.write().editor_binding.edit_content(push_back2);
     }
 }

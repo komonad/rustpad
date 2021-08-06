@@ -9,9 +9,10 @@ use parking_lot::RwLock;
 
 use log::{trace, info, error};
 
+use crate::USER_EDIT_SELECTOR;
 use crate::editor::{EditorBinding, EditorProxy, Edit};
 use crate::transformer::IndexTransformer;
-use druid::ExtEventSink;
+use druid::{AppLauncher, ExtEventSink, Target, WidgetId};
 
 #[derive(Clone)]
 pub struct Callback<T> {
@@ -84,7 +85,7 @@ impl Default for RustpadClient {
 }
 
 impl RustpadClient {
-    pub(crate) async fn create() -> Arc<RwLock<Self>> {
+    pub(crate) fn create() -> Arc<RwLock<Self>> {
         let res = Arc::new(RwLock::new(RustpadClient {
             my_info: Some(UserInfo {
                 name: "Comonad".to_string(),
@@ -107,6 +108,15 @@ impl RustpadClient {
 
 
 impl RustpadClient {
+    pub fn set_event_sink(&mut self, launcher: &AppLauncher<EditorBinding>, editor_widget_id: WidgetId) {
+        let event_sink = launcher.get_external_handle();
+        self.event_sink = Some(launcher.get_external_handle());
+        self.editor_binding.on_edit(Callback::new(Arc::new(RwLock::new(move |b: *const Edit| unsafe {
+            // Rustpad Client edit to GUI
+            event_sink.submit_command(USER_EDIT_SELECTOR, Box::new((*b).clone()), Target::Widget(editor_widget_id)).unwrap();
+        }))));
+    }
+
     pub(crate) fn send_info(&mut self) -> Option<()> {
         self.ws_sender.as_ref()?.unbounded_send(Message::Text(
             serde_json::to_string(&ClientMsg::ClientInfo(

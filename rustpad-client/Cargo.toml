@@ -28,3 +28,4 @@ parking_lot = "0.11.1"
 xi-unicode = "0.3.0"
 unicode-segmentation = "1.6.0"
 tracing = { version = "0.1.22" }
+pretty_env_logger = "0.4.0"
