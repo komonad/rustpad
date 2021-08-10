@@ -41,18 +41,18 @@ impl<T> Default for Callback<T> {
 
 pub struct RustpadClient {
     buffer: Option<OperationSeq>,
-    pub(crate) outstanding: Option<OperationSeq>,
+    pub outstanding: Option<OperationSeq>,
     revision: usize,
     my_id: Option<u64>,
-    pub(crate) users: HashMap<u64, UserInfo>,
+    pub users: HashMap<u64, UserInfo>,
     user_cursors: HashMap<u64, CursorData>,
     my_info: Option<UserInfo>,
     last_value: String,
-    pub(crate) ws_sender: Option<UnboundedSender<Message>>,
+    pub ws_sender: Option<UnboundedSender<Message>>,
     language: String,
-    cursor_data: CursorData,
+    pub cursor_data: CursorData,
     on_change_user: Callback<()>,
-    pub(crate) on_connected: Callback<()>,
+    pub on_connected: Callback<()>,
     on_change_language: Callback<(String, String)>,
     during_operation_application: bool,
     pub editor_binding: EditorBinding,
@@ -133,6 +133,14 @@ impl RustpadClient {
                 serde_json::to_string(operation).unwrap()
             )
         )).ok()
+    }
+
+    pub fn update_and_send_cursor_data(&mut self, selection: (u32, u32)) -> Option<()> {
+        self.cursor_data = CursorData {
+            cursors: vec![selection.0],
+            selections: vec![(std::cmp::min(selection.0, selection.1), std::cmp::max(selection.1, selection.0))]
+        };
+        self.send_cursor_data()
     }
 
     pub(crate) fn send_cursor_data(&mut self) -> Option<()> {

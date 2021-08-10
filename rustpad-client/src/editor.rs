@@ -7,6 +7,7 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 use crate::code_editor::text::{TextStorage, StringCursor};
 use crate::code_editor::text::editable_text::EditableText;
+use rustpad_server::rustpad::CursorData;
 // use druid::text::{EditableText, TextStorage, StringCursor};
 
 
@@ -67,7 +68,7 @@ impl EditorBinding {
             // GUI edit to Rustpad Client
             if let Some(mut handle) = copy.try_write() {
                 handle.editor_binding.edit_without_callback(&*b);
-                handle.on_change((*b).clone())
+                handle.on_change((*b).clone());
             }
         }))));
         our_document
