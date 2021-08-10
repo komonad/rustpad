@@ -28,7 +28,8 @@ use super::{
 use druid::kurbo::{Line, Point, Rect, Vec2};
 use druid::piet::TextLayout as _;
 use druid::widget::prelude::*;
-use druid::{theme, Cursor, Env, Modifiers, Selector, TextAlignment, UpdateCtx};
+use druid::{theme, Cursor, Env, Modifiers, Selector, TextAlignment, UpdateCtx, Color};
+use std::collections::HashMap;
 
 /// A widget that accepts text input.
 ///
@@ -96,6 +97,7 @@ pub struct EditSession<T> {
     /// notification when the user cancels editing.
     pub send_notification_on_cancel: bool,
     selection: Selection,
+    pub decorations: HashMap<u64, Selection>,
     accepts_newlines: bool,
     accepts_tabs: bool,
     alignment: TextAlignment,
@@ -458,28 +460,33 @@ impl<T: TextStorage + EditableText> Widget<T> for TextComponent<T> {
         let text_offset = Vec2::new(self.borrow().alignment_offset, 0.0);
 
         let selection = self.borrow().selection();
+        let decorations = self.borrow().decorations.clone();
         let composition = self.borrow().composition_range();
-        let sel_rects = self.borrow().layout.rects_for_range(selection.range());
-        if let Some(composition) = composition {
-            // I believe selection should always be contained in composition range while composing?
-            assert!(composition.start <= selection.anchor && composition.end >= selection.active);
-            let comp_rects = self.borrow().layout.rects_for_range(composition);
-            for region in comp_rects {
-                let y = region.max_y().floor();
-                let line = Line::new((region.min_x(), y), (region.max_x(), y)) + text_offset;
-                ctx.stroke(line, &cursor_color, 1.0);
+        let mut draw_selection = |selection: Selection, selection_color: &Color| {
+            let sel_rects = self.borrow().layout.rects_for_range(selection.range());
+            if let Some(composition) = composition.clone() {
+                // I believe selection should always be contained in composition range while composing?
+                assert!(composition.start <= selection.anchor && composition.end >= selection.active);
+                let comp_rects = self.borrow().layout.rects_for_range(composition);
+                for region in comp_rects {
+                    let y = region.max_y().floor();
+                    let line = Line::new((region.min_x(), y), (region.max_x(), y)) + text_offset;
+                    ctx.stroke(line, &cursor_color, 1.0);
+                }
+                for region in sel_rects {
+                    let y = region.max_y().floor();
+                    let line = Line::new((region.min_x(), y), (region.max_x(), y)) + text_offset;
+                    ctx.stroke(line, &cursor_color, 2.0);
+                }
+            } else {
+                for region in sel_rects {
+                    let rounded = (region + text_offset).to_rounded_rect(1.0);
+                    ctx.fill(rounded, selection_color);
+                }
             }
-            for region in sel_rects {
-                let y = region.max_y().floor();
-                let line = Line::new((region.min_x(), y), (region.max_x(), y)) + text_offset;
-                ctx.stroke(line, &cursor_color, 2.0);
-            }
-        } else {
-            for region in sel_rects {
-                let rounded = (region + text_offset).to_rounded_rect(1.0);
-                ctx.fill(rounded, &selection_color);
-            }
-        }
+        };
+        draw_selection(selection, &selection_color);
+        decorations.into_iter().for_each(|x| draw_selection(x.1, &selection_color));
         self.borrow().layout.draw(ctx, text_offset.to_point());
     }
 }
@@ -505,6 +512,10 @@ impl<T> EditSession<T> {
         } else {
             None
         }
+    }
+
+    pub fn set_decoration(&mut self, decorations: HashMap<u64, Selection>) {
+        self.decorations = decorations;
     }
 
     /// The range of text currently being modified by an IME.
@@ -944,6 +955,7 @@ impl<T> Default for TextComponent<T> {
             alignment_offset: 0.0,
             drag_granularity: DragGranularity::Grapheme,
             origin: Point::ZERO,
+            decorations: Default::default()
         };
 
         TextComponent {

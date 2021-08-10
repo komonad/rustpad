@@ -32,8 +32,10 @@ use broadcast::Sender;
 use crate::code_editor::text::{Selection, ImeInvalidation, EditableText};
 use druid_shell::text::Event::SelectionChanged;
 use rustpad_server::rustpad::CursorData;
+use std::collections::HashMap;
 
 const USER_EDIT_SELECTOR: Selector<Edit> = Selector::new("user-edit");
+const USER_CURSOR_UPDATE_SELECTOR: Selector<()> = Selector::new("user-cursor-data");
 
 struct EditorController(WidgetId, Arc<RwLock<RustpadClient>>, Selection);
 
@@ -44,23 +46,44 @@ impl Controller<EditorBinding, CodeEditor<EditorBinding>> for EditorController {
                 let edit = command.get(USER_EDIT_SELECTOR).unwrap();
                 let selection = child.text_mut().borrow_mut().selection();
 
-                let transform_index = |x: usize| -> usize {
-                    if x < edit.begin {
-                        x
-                    } else if x > edit.end {
-                        x + edit.begin + edit.content.len() - edit.end
-                    } else {
-                        edit.begin + edit.content.len()
-                    }
+                let transform_selection = |selection: Selection| -> Selection {
+                    let transform_index = |x: usize| -> usize {
+                        if x < edit.begin {
+                            x
+                        } else if x > edit.end {
+                            x + edit.begin + edit.content.len() - edit.end
+                        } else {
+                            edit.begin + edit.content.len()
+                        }
+                    };
+
+                    Selection::new(
+                        transform_index(selection.anchor),
+                        transform_index(selection.active),
+                    )
                 };
 
-                let new_selection = Selection::new(
-                    transform_index(selection.anchor),
-                    transform_index(selection.active),
-                );
-
                 data.edit_without_callback(edit);
-                let _ = child.text_mut().borrow_mut().set_selection(new_selection);
+                let _ = child.text_mut().borrow_mut().set_selection(transform_selection(selection));
+                child.text_mut().borrow_mut().decorations.iter_mut()
+                    .for_each(|(a, b)| *b = transform_selection(b.clone()));
+            }
+            Event::Command(command) if command.get(USER_CURSOR_UPDATE_SELECTOR).is_some() => {
+                let content = &data.content;
+                let unicode_offset_to_utf8_offset = |offset: u32| -> usize {
+                    content.iter().take(offset as usize).collect::<String>().len()
+                };
+                let mut new_decorations = HashMap::new();
+                let my_id = self.1.read().my_id.unwrap();
+                self.1.read().user_cursors.iter()
+                    .filter(|(&id, _)| id != my_id)
+                    .for_each(|(&id, sel)| {
+                        new_decorations.insert(id, Selection::new(
+                            unicode_offset_to_utf8_offset(sel.selections[0].0),
+                            unicode_offset_to_utf8_offset(sel.selections[0].1),
+                        ));
+                    });
+                child.text_mut().borrow_mut().decorations = new_decorations;
             }
             _ => child.event(ctx, event, data, env),
         };

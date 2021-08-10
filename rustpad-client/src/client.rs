@@ -9,7 +9,7 @@ use parking_lot::RwLock;
 
 use log::{trace, info, error};
 
-use crate::USER_EDIT_SELECTOR;
+use crate::{USER_EDIT_SELECTOR, USER_CURSOR_UPDATE_SELECTOR};
 use crate::editor::{EditorBinding, EditorProxy, Edit};
 use crate::transformer::IndexTransformer;
 use druid::{AppLauncher, ExtEventSink, Target, WidgetId};
@@ -43,9 +43,9 @@ pub struct RustpadClient {
     buffer: Option<OperationSeq>,
     pub outstanding: Option<OperationSeq>,
     revision: usize,
-    my_id: Option<u64>,
+    pub my_id: Option<u64>,
     pub users: HashMap<u64, UserInfo>,
-    user_cursors: HashMap<u64, CursorData>,
+    pub user_cursors: HashMap<u64, CursorData>,
     my_info: Option<UserInfo>,
     last_value: String,
     pub ws_sender: Option<UnboundedSender<Message>>,
@@ -275,7 +275,11 @@ impl RustpadClient {
     }
 
     fn update_cursors(&mut self) {
-        // do nothing
+        self.event_sink.as_ref().unwrap().submit_command(
+            USER_CURSOR_UPDATE_SELECTOR,
+            Box::new(()),
+            Target::Auto,
+        ).expect("cursor update send failed");
     }
 
     fn update_users(&mut self) {
