@@ -77,6 +77,7 @@ impl Controller<EditorBinding, CodeEditor<EditorBinding>> for EditorController {
                 let my_id = self.1.read().my_id.unwrap();
                 self.1.read().user_cursors.iter()
                     .filter(|(&id, _)| id != my_id)
+                    .filter(|(_, data)| !data.selections.is_empty())
                     .for_each(|(&id, sel)| {
                         new_decorations.insert(id, Selection::new(
                             unicode_offset_to_utf8_offset(sel.selections[0].0),
