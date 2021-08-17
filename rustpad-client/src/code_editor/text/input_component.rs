@@ -462,6 +462,7 @@ impl<T: TextStorage + EditableText> Widget<T> for TextComponent<T> {
         let selection = self.borrow().selection();
         let decorations = self.borrow().decorations.clone();
         let composition = self.borrow().composition_range();
+
         let mut draw_selection = |selection: Selection, selection_color: &Color| {
             let sel_rects = self.borrow().layout.rects_for_range(selection.range());
             if let Some(composition) = composition.clone() {
@@ -486,7 +487,7 @@ impl<T: TextStorage + EditableText> Widget<T> for TextComponent<T> {
             }
         };
         draw_selection(selection, &selection_color);
-        decorations.into_iter().for_each(|x| draw_selection(x.1, &selection_color));
+        decorations.into_iter().for_each(|x| draw_selection(x.1, &Color::PURPLE));
         self.borrow().layout.draw(ctx, text_offset.to_point());
     }
 }

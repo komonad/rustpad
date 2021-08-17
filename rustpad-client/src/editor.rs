@@ -18,6 +18,14 @@ pub struct Edit {
     pub content: String,
 }
 
+pub struct Edit1(Edit);
+
+impl Drop for Edit1 {
+    fn drop(&mut self) {
+        println!("{:?} dropped", self.0);
+    }
+}
+
 pub trait EditorProxy: Send + Sync {
     fn edit_content(&mut self, edit: Edit);
     fn get_content(&self) -> String;
@@ -61,16 +69,20 @@ impl EditorBinding {
         println!("current content: {}", self.content_as_string);
     }
 
-    pub fn create_with_client(client: &Arc<RwLock<RustpadClient>>) -> Self {
+    pub fn set_client(&mut self, client: &Arc<RwLock<RustpadClient>>) {
         let copy = Arc::clone(&client);
-        let mut our_document = EditorBinding::default();
-        our_document.on_edit(Callback::new(Arc::new(RwLock::new(move |b: *const Edit| unsafe {
+        self.on_edit(Callback::new(Arc::new(RwLock::new(move |b: *const Edit| unsafe {
             // GUI edit to Rustpad Client
             if let Some(mut handle) = copy.try_write() {
                 handle.editor_binding.edit_without_callback(&*b);
                 handle.on_change((*b).clone());
             }
         }))));
+    }
+
+    pub fn create_with_client(client: &Arc<RwLock<RustpadClient>>) -> Self {
+        let mut our_document = EditorBinding::default();
+        our_document.set_client(client);
         our_document
     }
 }

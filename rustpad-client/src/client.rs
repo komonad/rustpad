@@ -40,6 +40,8 @@ impl<T> Default for Callback<T> {
 }
 
 pub struct RustpadClient {
+    pub server_url: String,
+    pub widget_id: Option<WidgetId>,
     buffer: Option<OperationSeq>,
     pub outstanding: Option<OperationSeq>,
     revision: usize,
@@ -63,6 +65,8 @@ pub struct RustpadClient {
 impl Default for RustpadClient {
     fn default() -> Self {
         RustpadClient {
+            server_url: "".to_string(),
+            widget_id: None,
             buffer: None,
             outstanding: None,
             revision: 0,
@@ -85,8 +89,9 @@ impl Default for RustpadClient {
 }
 
 impl RustpadClient {
-    pub(crate) fn create() -> Arc<RwLock<Self>> {
+    pub(crate) fn create(server_url: String) -> Arc<RwLock<Self>> {
         let res = Arc::new(RwLock::new(RustpadClient {
+            server_url,
             my_info: Some(UserInfo {
                 name: "Comonad".to_string(),
                 hue: 1231231231,
@@ -108,12 +113,14 @@ impl RustpadClient {
 
 
 impl RustpadClient {
-    pub fn set_event_sink(&mut self, launcher: &AppLauncher<EditorBinding>, editor_widget_id: WidgetId) {
-        let event_sink = launcher.get_external_handle();
-        self.event_sink = Some(launcher.get_external_handle());
+    pub fn set_event_sink(&mut self, event_sink: ExtEventSink, editor_widget_id: WidgetId) {
+        // let event_sink = launcher.get_external_handle();
+        self.event_sink = Some(event_sink.clone());
         self.editor_binding.on_edit(Callback::new(Arc::new(RwLock::new(move |b: *const Edit| unsafe {
+            println!("send rustpad client edit to widget");
             // Rustpad Client edit to GUI
-            event_sink.submit_command(USER_EDIT_SELECTOR, Box::new((*b).clone()), Target::Widget(editor_widget_id)).unwrap();
+            event_sink.submit_command(USER_EDIT_SELECTOR, Box::new((*b).clone()), Target::Widget(editor_widget_id))
+                .expect("client edit sent to widget");
         }))));
     }
 
@@ -184,7 +191,7 @@ impl RustpadClient {
     }
 
     fn apply_server(&mut self, operation: &OperationSeq) {
-        trace!("apply server operation {:?}", operation);
+        println!("apply server operation {:?}", operation);
         if let Some(outstanding) = &self.outstanding {
             let (t1, t2) = outstanding.transform(&operation).unwrap();
             self.outstanding = Some(t1);
@@ -278,7 +285,8 @@ impl RustpadClient {
         self.event_sink.as_ref().unwrap().submit_command(
             USER_CURSOR_UPDATE_SELECTOR,
             Box::new(()),
-            Target::Auto,
+            Target::Widget(self.widget_id.unwrap()),
+            // Target::Auto,
         ).expect("cursor update send failed");
     }
 
