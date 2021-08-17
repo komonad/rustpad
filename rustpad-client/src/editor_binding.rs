@@ -7,9 +7,6 @@ use std::sync::Arc;
 use parking_lot::RwLock;
 use crate::code_editor::text::{TextStorage, StringCursor};
 use crate::code_editor::text::editable_text::EditableText;
-use rustpad_server::rustpad::CursorData;
-// use druid::text::{EditableText, TextStorage, StringCursor};
-
 
 #[derive(Default, Debug, Clone)]
 pub struct Edit {
@@ -38,9 +35,6 @@ pub struct EditorBinding {
     pub content_as_string: String,
     pub after_edits: Vec<Callback<*const Edit>>,
 }
-
-#[derive(Clone)]
-struct EditorBindingPtr(Arc<RwLock<EditorBinding>>, String);
 
 impl EditorBinding {
     fn calculate_content_as_string(&self) -> String {
@@ -191,77 +185,3 @@ impl EditableText for EditorBinding {
         }
     }
 }
-//
-// impl PietTextStorage for EditorBindingPtr {
-//     fn as_str(&self) -> &str {
-//         self.0.read().content_as_string.as_str()
-//     }
-// }
-//
-// impl Data for EditorBindingPtr {
-//     fn same(&self, other: &Self) -> bool {
-//         self.0.read().same(other.0.read().deref())
-//     }
-// }
-//
-// impl TextStorage for EditorBindingPtr {
-//
-// }
-//
-// impl EditableText for EditorBindingPtr {
-//     fn cursor(&self, position: usize) -> Option<StringCursor> {
-//         todo!()
-//     }
-//
-//     fn edit(&mut self, range: Range<usize>, new: impl Into<String>) {
-//         todo!()
-//     }
-//
-//     fn slice(&self, range: Range<usize>) -> Option<Cow<str>> {
-//         todo!()
-//     }
-//
-//     fn len(&self) -> usize {
-//         todo!()
-//     }
-//
-//     fn prev_word_offset(&self, offset: usize) -> Option<usize> {
-//         todo!()
-//     }
-//
-//     fn next_word_offset(&self, offset: usize) -> Option<usize> {
-//         todo!()
-//     }
-//
-//     fn prev_grapheme_offset(&self, offset: usize) -> Option<usize> {
-//         todo!()
-//     }
-//
-//     fn next_grapheme_offset(&self, offset: usize) -> Option<usize> {
-//         todo!()
-//     }
-//
-//     fn prev_codepoint_offset(&self, offset: usize) -> Option<usize> {
-//         todo!()
-//     }
-//
-//     fn next_codepoint_offset(&self, offset: usize) -> Option<usize> {
-//         todo!()
-//     }
-//
-//     fn preceding_line_break(&self, offset: usize) -> usize {
-//         todo!()
-//     }
-//
-//     fn next_line_break(&self, offset: usize) -> usize {
-//         todo!()
-//     }
-//
-//     fn is_empty(&self) -> bool {
-//         todo!()
-//     }
-//
-//     fn from_str(s: &str) -> Self {
-//         todo!()
-//     }
-// }

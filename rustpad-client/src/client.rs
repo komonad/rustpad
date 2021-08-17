@@ -9,10 +9,10 @@ use parking_lot::RwLock;
 
 use log::{trace, info, error};
 
-use crate::{USER_EDIT_SELECTOR, USER_CURSOR_UPDATE_SELECTOR};
-use crate::editor::{EditorBinding, EditorProxy, Edit};
+use crate::coeditor::{USER_EDIT_SELECTOR, USER_CURSOR_UPDATE_SELECTOR};
+use crate::editor_binding::{EditorBinding, EditorProxy, Edit};
 use crate::transformer::IndexTransformer;
-use druid::{AppLauncher, ExtEventSink, Target, WidgetId};
+use druid::{ExtEventSink, Target, WidgetId};
 
 #[derive(Clone)]
 pub struct Callback<T> {
@@ -45,7 +45,7 @@ pub struct RustpadClient {
     buffer: Option<OperationSeq>,
     pub outstanding: Option<OperationSeq>,
     revision: usize,
-    pub my_id: Option<u64>,
+    my_id: Option<u64>,
     pub users: HashMap<u64, UserInfo>,
     pub user_cursors: HashMap<u64, CursorData>,
     my_info: Option<UserInfo>,
@@ -169,12 +169,20 @@ impl RustpadClient {
         }
     }
 
-    fn close(&mut self) -> Option<()> {
+    pub fn close(&mut self) -> Option<()> {
         self.ws_sender.as_ref()?.unbounded_send(Message::Close(None)).ok()
     }
 
-    fn set_id(&mut self, id: u64) {
+    pub fn set_id(&mut self, id: u64) {
         self.my_id = Some(id);
+    }
+
+    pub fn id_is(&self, id: u64) -> bool {
+        self.my_id == Some(id)
+    }
+
+    pub fn id(&self) -> u64 {
+        self.my_id.unwrap()
     }
 
     fn transform_cursor(&mut self, operation: &OperationSeq) {
@@ -297,7 +305,7 @@ impl RustpadClient {
     pub(crate) fn handle_message(&mut self, message: ServerMsg) {
         match message {
             ServerMsg::Identity(id) => {
-                self.my_id = Some(id)
+                self.set_id(id)
             }
             ServerMsg::History { start, operations } => {
                 if start > self.revision {
@@ -308,7 +316,7 @@ impl RustpadClient {
                 for i in self.revision - start..operations.len() {
                     let UserOperation { id, operation } = &operations[i];
                     self.revision += 1;
-                    if Some(*id) == self.my_id {
+                    if self.id_is(*id) {
                         self.send_server_ack();
                     } else {
                         self.apply_server(operation);
