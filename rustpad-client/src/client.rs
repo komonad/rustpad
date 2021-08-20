@@ -19,6 +19,12 @@ pub struct Callback<T> {
     callable: Arc<RwLock<dyn Fn(T) -> () + Send + Sync>>,
 }
 
+impl<T> PartialEq for Callback<T> {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.callable, &other.callable)
+    }
+}
+
 impl<T> Callback<T> {
     pub fn new(callable: Arc<RwLock<dyn Fn(T) -> () + Send + Sync>>) -> Self {
         Callback {
