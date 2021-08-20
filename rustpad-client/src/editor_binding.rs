@@ -29,7 +29,7 @@ pub trait EditorProxy: Send + Sync {
     fn on_edit(&mut self, callback: Callback<*const Edit>);
 }
 
-#[derive(Default, Clone)]
+#[derive(Default, Clone, PartialEq)]
 pub struct EditorBinding {
     pub content: Vec<char>,
     pub content_as_string: String,
@@ -110,7 +110,7 @@ impl PietTextStorage for EditorBinding {
 
 impl Data for EditorBinding {
     fn same(&self, other: &Self) -> bool {
-        self.content == other.content
+        self.content == other.content && self.after_edits == other.after_edits
     }
 }
 

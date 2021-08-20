@@ -112,7 +112,7 @@ impl Drop for CoEditorWidget {
             tokio::time::timeout(Duration::from_secs(5),
                                  self.connection_handle.take().unwrap(),
             )
-        ).unwrap();
+        );
         println!("CoEditorWidget destructed");
     }
 }
@@ -139,13 +139,14 @@ impl Widget<EditorBinding> for CoEditorWidget {
             println!("received {:?}", cmd);
         }
         match event {
-            Event::Command(command) if command.get(COEDITOR_INIT_CLIENT).is_some() => {
-                // && command.target() == Target::Widget(self.inner.id())
+            Event::Command(command) if command.get(COEDITOR_INIT_CLIENT).is_some()
+                && command.target() == Target::Widget(ctx.widget_id()) => {
                 let client = command.get(COEDITOR_INIT_CLIENT).unwrap();
                 data.set_client(client);
                 println!("editor binding client initialized");
             }
-            Event::Command(command) if command.get(USER_EDIT_SELECTOR).is_some() => {
+            Event::Command(command) if command.get(USER_EDIT_SELECTOR).is_some()
+                && command.target() == Target::Widget(ctx.widget_id()) => {
                 println!("received edit command");
                 let edit = command.get(USER_EDIT_SELECTOR).unwrap();
                 let selection = self.inner.widget().text().borrow().selection();
@@ -172,7 +173,8 @@ impl Widget<EditorBinding> for CoEditorWidget {
                 self.inner.widget_mut().text_mut().borrow_mut().decorations.iter_mut()
                     .for_each(|(_, b)| *b = transform_selection(b.clone()));
             }
-            Event::Command(command) if command.get(USER_CURSOR_UPDATE_SELECTOR).is_some() => {
+            Event::Command(command) if command.get(USER_CURSOR_UPDATE_SELECTOR).is_some()
+                && command.target() == Target::Widget(ctx.widget_id()) => {
                 println!("received cursor command");
                 let content = &data.content;
                 let unicode_offset_to_utf8_offset = |offset: u32| -> usize {
@@ -224,7 +226,11 @@ impl Widget<EditorBinding> for CoEditorWidget {
         }
     }
 
-    fn update(&mut self, ctx: &mut UpdateCtx, _old_data: &EditorBinding, data: &EditorBinding, env: &Env) {
+    fn update(&mut self, ctx: &mut UpdateCtx, old_data: &EditorBinding, data: &EditorBinding, env: &Env) {
+        if old_data.after_edits.len() != data.after_edits.len() {
+            println!("editor binding's callback changed from {} to {}", old_data.after_edits.len(), data.after_edits.len());
+        }
+
         let new_selection = self.inner.widget().text().borrow().selection();
         if self.last_selection != new_selection {
             self.last_selection = new_selection;
